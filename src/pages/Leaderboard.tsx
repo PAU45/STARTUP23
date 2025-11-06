@@ -16,7 +16,7 @@ import { Trophy, TrendingUp, Flame, Users, Medal, Crown } from "lucide-react";
 import { getStats } from "@/lib/storage";
 
 const Leaderboard = () => {
-  const [userStats, setUserStats] = useState<any>(null);
+  const [userStats, setUserStats] = useState<ReturnType<typeof getStats> | null>(null);
 
   useEffect(() => {
     setUserStats(getStats());

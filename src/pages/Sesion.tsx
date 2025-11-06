@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -54,40 +54,13 @@ const Sesion = () => {
   const [selectedMood, setSelectedMood] = useState("");
   const [achievementGoal, setAchievementGoal] = useState<'yes' | 'partial' | 'no'>('yes');
 
-  const subject = (location.state as any)?.subject || "Cálculo 2 - Integrales";
+  type LocationState = { subject?: string };
+  const subject = (location.state as LocationState)?.subject || "Cálculo 2 - Integrales";
   const totalDuration = 120 * 60; // 2 hours
   const elapsed = totalDuration - timeLeft;
   const progressPercent = (elapsed / totalDuration) * 100;
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handlePhaseComplete();
-            return getNextPhaseTime();
-          }
-          return prev - 1;
-        });
-        // Incrementar tiempo total transcurrido
-        setTotalElapsed(prev => prev + 1);
-      }, 1000);
-    }
-
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
-
-  // Emotional checkpoint every 15 minutes
-  useEffect(() => {
-    if (isRunning && elapsed > 0 && elapsed % (15 * 60) === 0) {
-      setShowMoodCheck(true);
-      setIsRunning(false);
-    }
-  }, [elapsed]);
-
-  const getNextPhaseTime = () => {
+  const getNextPhaseTime = useCallback(() => {
     if (phase === 'focus') {
       const newCount = pomodoroCount + 1;
       setPomodoroCount(newCount);
@@ -102,14 +75,43 @@ const Sesion = () => {
       setPhase('focus');
       return 25 * 60;
     }
-  };
+  }, [phase, pomodoroCount]);
 
-  const handlePhaseComplete = () => {
+  const handlePhaseComplete = useCallback(() => {
     toast({
       title: phase === 'focus' ? "🎉 ¡Pomodoro Completado!" : "✓ Descanso Terminado",
       description: phase === 'focus' ? "Tiempo de descansar" : "Volvamos a enfocarnos",
     });
-  };
+  }, [phase, toast]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            handlePhaseComplete();
+            return getNextPhaseTime();
+          }
+          return prev - 1;
+        });
+        // Incrementar tiempo total transcurrido
+        setTotalElapsed((prev) => prev + 1);
+      }, 1000);
+    }
+
+    return () => clearInterval(interval);
+  }, [isRunning, timeLeft, getNextPhaseTime, handlePhaseComplete]);
+
+  // Emotional checkpoint every 15 minutes
+  useEffect(() => {
+    if (isRunning && elapsed > 0 && elapsed % (15 * 60) === 0) {
+      setShowMoodCheck(true);
+      setIsRunning(false);
+    }
+  }, [elapsed, isRunning]);
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

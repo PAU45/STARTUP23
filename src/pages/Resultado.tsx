@@ -24,7 +24,16 @@ import {
 
 const Resultado = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(null);
+  type Profile = {
+    type: string;
+    description: string;
+    strengths: string[];
+    challenges: string[];
+    radarData: { subject: string; value: number; fullMark: number }[];
+    recommendedPlan: string;
+  };
+
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     const answers = localStorage.getItem('diagnosticAnswers');
@@ -34,16 +43,16 @@ const Resultado = () => {
     }
 
     // Generate profile based on answers
-    const parsedAnswers = JSON.parse(answers);
+    const parsedAnswers = JSON.parse(answers) as unknown[];
     const generatedProfile = generateProfile(parsedAnswers);
     setProfile(generatedProfile);
   }, [navigate]);
 
-  const generateProfile = (answers: any) => {
+  const generateProfile = (answers: unknown[]) => {
     // Simple logic to generate profile type
-    const procrastinationFreq = answers[1] || 5;
-    const motivation = answers[7] || 5;
-    const perfectionism = answers[6] === "Perfeccionismo (espero el momento ideal)";
+    const procrastinationFreq = (answers[1] as number) || 5;
+    const motivation = (answers[7] as number) || 5;
+    const perfectionism = String(answers[6]) === "Perfeccionismo (espero el momento ideal)";
 
     let type = "PROCRASTINADOR PERFECCIONISTA";
     let description = "Esperas el momento perfecto para estudiar, pero ese momento nunca llega. Tienes altos estándares que a veces te paralizan.";

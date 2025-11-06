@@ -25,40 +25,56 @@ export interface StudySession {
 
 export interface DiagnosticAnswer {
   questionId: number;
-  answer: any;
+  answer: unknown;
   timestamp: string;
 }
 
 // User Profile
+// small helpers to strongly-type localStorage usage
+const setItem = <T,>(key: string, value: T): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    // ignore for now
+  }
+};
+
+const getItem = <T,>(key: string): T | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 export const saveUserProfile = (profile: Partial<UserProfile>) => {
   const existing = getUserProfile();
-  const updated = { ...existing, ...profile };
-  localStorage.setItem('studyflow_user', JSON.stringify(updated));
+  const updated = { ...existing, ...profile } as UserProfile;
+  setItem<UserProfile>('studyflow_user', updated);
 };
 
 export const getUserProfile = (): UserProfile | null => {
-  const data = localStorage.getItem('studyflow_user');
-  return data ? JSON.parse(data) : null;
+  return getItem<UserProfile>('studyflow_user');
 };
 
 // Diagnostic Answers - Guarda cada respuesta inmediatamente
-export const saveDiagnosticAnswer = (questionId: number, answer: any) => {
+export const saveDiagnosticAnswer = (questionId: number, answer: unknown) => {
   const answers = getDiagnosticAnswers();
   const newAnswer: DiagnosticAnswer = {
     questionId,
     answer,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  
-  const filtered = answers.filter(a => a.questionId !== questionId);
+
+  const filtered = answers.filter((a) => a.questionId !== questionId);
   filtered.push(newAnswer);
-  
-  localStorage.setItem('studyflow_diagnostic', JSON.stringify(filtered));
+
+  setItem<DiagnosticAnswer[]>('studyflow_diagnostic', filtered);
 };
 
 export const getDiagnosticAnswers = (): DiagnosticAnswer[] => {
-  const data = localStorage.getItem('studyflow_diagnostic');
-  return data ? JSON.parse(data) : [];
+  return getItem<DiagnosticAnswer[]>('studyflow_diagnostic') ?? [];
 };
 
 export const clearDiagnostic = () => {
@@ -69,35 +85,34 @@ export const clearDiagnostic = () => {
 export const saveSession = (session: StudySession) => {
   const sessions = getSessions();
   sessions.push(session);
-  localStorage.setItem('studyflow_sessions', JSON.stringify(sessions));
+  setItem<StudySession[]>('studyflow_sessions', sessions);
 };
 
 export const getSessions = (): StudySession[] => {
-  const data = localStorage.getItem('studyflow_sessions');
-  return data ? JSON.parse(data) : [];
+  return getItem<StudySession[]>('studyflow_sessions') ?? [];
 };
 
 // Statistics (calculadas en tiempo real)
 export const getStats = () => {
   const sessions = getSessions();
-  const completedSessions = sessions.filter(s => s.completed);
-  
+  const completedSessions = sessions.filter((s) => s.completed);
+
   const totalHours = completedSessions.reduce((acc, s) => acc + s.duration / 3600, 0);
-  const thisWeekSessions = completedSessions.filter(s => {
+  const thisWeekSessions = completedSessions.filter((s) => {
     const sessionDate = new Date(s.startTime);
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return sessionDate > weekAgo;
   });
-  
+
   const streak = calculateStreak(completedSessions);
-  
+
   return {
     totalSessions: completedSessions.length,
     totalHours: totalHours.toFixed(1),
     sessionsThisWeek: thisWeekSessions.length,
     streak,
-  };
+  } as const;
 };
 
 const calculateStreak = (sessions: StudySession[]): number => {
@@ -179,8 +194,7 @@ export const checkAndUnlockAchievements = (): Achievement[] => {
 };
 
 export const getUnlockedAchievements = (): Achievement[] => {
-  const data = localStorage.getItem('studyflow_achievements');
-  return data ? JSON.parse(data) : [];
+  return getItem<Achievement[]>('studyflow_achievements') ?? [];
 };
 
 // AI Tips Generation (simula IA)
