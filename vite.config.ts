@@ -5,6 +5,9 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // When deploying to GitHub Pages under https://pau45.github.io/STARTUP23/
+  // set the `base` to the repository name so built asset paths are correct.
+  base: "/STARTUP23/",
   server: {
     host: "::",
     port: 8080,
@@ -14,5 +17,8 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    outDir: "docs",
   },
 }));
